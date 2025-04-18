@@ -1,13 +1,32 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React from 'react';
+import { UpiProvider } from '@/context/UpiContext';
+import Header from '@/components/Header';
+import BalanceCard from '@/components/BalanceCard';
+import QuickActions from '@/components/QuickActions';
+import TransactionList from '@/components/TransactionList';
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <UpiProvider>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        
+        <main className="max-w-md mx-auto pb-24">
+          <div className="p-4">
+            <BalanceCard />
+            <QuickActions />
+            
+            <div className="mt-4">
+              <h2 className="text-lg font-medium mb-2">Transactions</h2>
+              <div className="bg-white rounded-lg shadow-sm">
+                <TransactionList />
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
-    </div>
+    </UpiProvider>
   );
 };
 
