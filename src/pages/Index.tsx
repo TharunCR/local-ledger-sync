@@ -9,15 +9,15 @@ import TransactionList from '@/components/TransactionList';
 const Index = () => {
   return (
     <UpiProvider>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 max-w-md mx-auto">
         <Header />
         
-        <main className="max-w-md mx-auto pb-24">
-          <div className="p-4">
+        <main className="pb-24 px-4">
+          <div className="space-y-4">
             <BalanceCard />
             <QuickActions />
             
-            <div className="mt-4">
+            <div>
               <h2 className="text-lg font-medium mb-2">Transactions</h2>
               <div className="bg-white rounded-lg shadow-sm">
                 <TransactionList />

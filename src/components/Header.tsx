@@ -11,7 +11,7 @@ const Header: React.FC = () => {
     <header className="bg-white sticky top-0 z-10 shadow-sm">
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center">
-          <h1 className="text-2xl font-bold text-upi-blue">Local UPI</h1>
+          <h1 className="text-2xl font-bold text-upi-blue">Payzzle</h1>
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-sm text-upi-darkGray">
