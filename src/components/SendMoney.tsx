@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useUpi } from '@/context/UpiContext';
 import {
@@ -105,7 +104,6 @@ const SendMoney: React.FC = () => {
     
     let success;
     
-    // Use different sending method based on online status and transfer method
     if (!isOnline && transferMethod === 'bluetooth' && selectedDevice) {
       success = await sendMoneyViaBluetooth(Number(amount), selectedDevice, pin);
     } else {

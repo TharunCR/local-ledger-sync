@@ -15,11 +15,12 @@ type Transaction = {
   method?: "online" | "bluetooth" | "nfc" | "qr";
 };
 
-type BluetoothDevice = {
+// Define our own BluetoothDeviceInfo type to avoid confusion with the Web API's BluetoothDevice
+type BluetoothDeviceInfo = {
   id: string;
   name: string;
   connected: boolean;
-  device?: BluetoothDevice;
+  device?: globalThis.BluetoothDevice; // Use globalThis to explicitly reference the Web API type
 };
 
 type UpiContextType = {
@@ -35,7 +36,7 @@ type UpiContextType = {
   upiId: string;
   isBluetoothOn: boolean;
   toggleBluetooth: () => void;
-  bluetoothDevices: BluetoothDevice[];
+  bluetoothDevices: BluetoothDeviceInfo[];
   connectToDevice: (deviceId: string) => Promise<boolean>;
   disconnectDevice: (deviceId: string) => void;
   sendMoneyViaBluetooth: (amount: number, deviceId: string, pin: string) => Promise<boolean>;
@@ -61,7 +62,7 @@ export const UpiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
   const [upiId, setUpiId] = useState("user@payzzle");
   const [isBluetoothOn, setIsBluetoothOn] = useState(false);
-  const [bluetoothDevices, setBluetoothDevices] = useState<BluetoothDevice[]>([]);
+  const [bluetoothDevices, setBluetoothDevices] = useState<BluetoothDeviceInfo[]>([]);
   
   const PIN = "1234"; // This would normally be securely stored/verified
 
