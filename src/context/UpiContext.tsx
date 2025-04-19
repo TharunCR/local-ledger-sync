@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -42,14 +41,20 @@ export const UpiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [actualBalance, setActualBalance] = useState(10000);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
-  const [upiId, setUpiId] = useState("user@localupi");
+  const [upiId, setUpiId] = useState("user@payzzle");
   
   const PIN = "1234"; // This would normally be securely stored/verified
+
+  // Sync balances when coming online
+  useEffect(() => {
+    if (isOnline && pendingTransactions.length > 0) {
+      syncLedger();
+    }
+  }, [isOnline]);
 
   const toggleOnline = () => {
     const newStatus = !isOnline;
     setIsOnline(newStatus);
-    
     if (newStatus) {
       toast.info("You are now online");
     } else {
@@ -104,26 +109,29 @@ export const UpiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const receiveMoney = (amount: number, sender: string) => {
-    // Create transaction
     const transaction: Transaction = {
       id: Math.random().toString(36).substring(2, 15),
       amount,
       recipient: upiId,
       sender,
       timestamp: new Date(),
-      status: "completed",
+      status: isOnline ? "completed" : "pending",
       type: "receive"
     };
 
-    // Update balances
+    // Update ledger balance immediately for all cases
     setLedgerBalance(prev => prev + amount);
-    if (isOnline) {
-      setActualBalance(prev => prev + amount);
-    }
     
-    // Add to transactions
-    setTransactions(prev => [transaction, ...prev]);
-    toast.success(`₹${amount} received from ${sender}`);
+    if (isOnline) {
+      // If online, update actual balance and add to completed transactions
+      setActualBalance(prev => prev + amount);
+      setTransactions(prev => [transaction, ...prev]);
+      toast.success(`₹${amount} received from ${sender}`);
+    } else {
+      // If offline, add to pending transactions
+      setPendingTransactions(prev => [...prev, { ...transaction, status: "pending" }]);
+      toast.success(`₹${amount} will be received when online`);
+    }
   };
 
   const syncLedger = () => {
@@ -139,11 +147,11 @@ export const UpiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Process pending transactions
     const completedTransactions = pendingTransactions.map(tx => ({
-      ...tx, 
+      ...tx,
       status: "completed" as const
     }));
     
-    // Update actual balance
+    // Update actual balance to match ledger
     setActualBalance(ledgerBalance);
     
     // Move from pending to completed

@@ -11,7 +11,6 @@ const BalanceCard: React.FC = () => {
   const hasPendingTx = pendingTransactions.length > 0;
   const needsSync = ledgerBalance !== actualBalance;
   
-  // Automatically sync when online and there are pending transactions
   useEffect(() => {
     if (isOnline && hasPendingTx) {
       syncLedger();
@@ -23,7 +22,7 @@ const BalanceCard: React.FC = () => {
     <Card className="w-full p-6 bg-gradient-to-br from-upi-blue to-blue-700 text-white relative overflow-hidden rounded-lg shadow-md">
       <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-upi-yellow via-upi-green to-upi-blue"></div>
       
-      <div className="mb-4">
+      <div className="mb-6">
         <p className="text-sm opacity-80">Actual Balance</p>
         <p className="text-3xl font-bold mb-2">₹{actualBalance.toLocaleString()}</p>
         
