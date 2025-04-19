@@ -3,9 +3,20 @@ import React from 'react';
 import { useUpi } from '@/context/UpiContext';
 import { Switch } from '@/components/ui/switch';
 import { WifiIcon, WifiOffIcon, BluetoothIcon, BluetoothOffIcon } from 'lucide-react';
+import BluetoothService from '@/services/BluetoothService';
 
 const Header: React.FC = () => {
   const { isOnline, toggleOnline, isBluetoothOn, toggleBluetooth } = useUpi();
+  
+  const handleBluetoothToggle = () => {
+    if (!isBluetoothOn && !BluetoothService.isBluetoothAvailable()) {
+      // If we're turning on Bluetooth but the API isn't available, show error
+      alert("Web Bluetooth API is not available in your browser. Please use a compatible browser like Chrome.");
+      return;
+    }
+    
+    toggleBluetooth();
+  };
   
   return (
     <header className="bg-white sticky top-0 z-10 shadow-sm">
@@ -28,7 +39,7 @@ const Header: React.FC = () => {
             </span>
             <Switch 
               checked={isBluetoothOn} 
-              onCheckedChange={toggleBluetooth} 
+              onCheckedChange={handleBluetoothToggle} 
               className={isBluetoothOn ? "bg-blue-500" : "bg-gray-300"} 
             />
           </div>

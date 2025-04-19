@@ -60,6 +60,12 @@ const TransactionList: React.FC = () => {
             <div>
               <p className="font-medium">
                 {tx.type === "send" ? tx.recipient : tx.sender}
+                {tx.method === "bluetooth" && (
+                  <span className="ml-2 inline-flex items-center">
+                    <BluetoothIcon size={12} className="text-blue-500 mr-1" />
+                    <span className="text-xs text-blue-500">Bluetooth</span>
+                  </span>
+                )}
               </p>
               <p className="text-xs text-upi-darkGray flex items-center">
                 {format(new Date(tx.timestamp), 'dd MMM, hh:mm a')}

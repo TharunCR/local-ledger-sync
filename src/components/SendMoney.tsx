@@ -21,7 +21,8 @@ import {
   QrCodeIcon, 
   PhoneIcon,
   CheckCircle2Icon,
-  XCircleIcon
+  XCircleIcon,
+  RefreshCwIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -34,7 +35,8 @@ const SendMoney: React.FC = () => {
     bluetoothDevices,
     connectToDevice,
     disconnectDevice,
-    sendMoneyViaBluetooth
+    sendMoneyViaBluetooth,
+    scanForBluetoothDevices
   } = useUpi();
   
   const [amount, setAmount] = useState('');
@@ -47,7 +49,7 @@ const SendMoney: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleSearch = () => {
+  const handleScan = async () => {
     if (!isBluetoothOn) {
       toast.error("Please enable Bluetooth first");
       return;
@@ -55,15 +57,26 @@ const SendMoney: React.FC = () => {
     
     setIsSearching(true);
     
-    // Simulate device discovery process
-    setTimeout(() => {
+    try {
+      const result = await scanForBluetoothDevices();
+      
+      if (!result) {
+        toast.error("No devices found or user cancelled");
+      }
+    } catch (error) {
+      console.error("Error during Bluetooth scan:", error);
+      toast.error(`Scan error: ${(error as Error).message}`);
+    } finally {
       setIsSearching(false);
-    }, 2000);
+    }
   };
 
-  const handleDeviceSelect = (deviceId: string) => {
+  const handleDeviceSelect = async (deviceId: string) => {
     setSelectedDevice(deviceId);
-    connectToDevice(deviceId);
+    const connected = await connectToDevice(deviceId);
+    if (!connected) {
+      setSelectedDevice(null);
+    }
   };
 
   const handleDeviceDisconnect = (deviceId: string) => {
@@ -104,7 +117,7 @@ const SendMoney: React.FC = () => {
     if (success) {
       const message = isOnline 
         ? `₹${amount} sent to ${recipient}`
-        : `Offline transfer of ₹${amount} initiated via ${transferMethod}`;
+        : `Transfer of ₹${amount} completed via ${transferMethod}`;
       toast.success(message);
       resetForm();
       setIsOpen(false);
@@ -209,7 +222,7 @@ const SendMoney: React.FC = () => {
                   ) : (
                     <>
                       <Button 
-                        onClick={handleSearch} 
+                        onClick={handleScan} 
                         disabled={isSearching}
                         className="w-full"
                       >
@@ -221,14 +234,25 @@ const SendMoney: React.FC = () => {
                         ) : (
                           <>
                             <BluetoothIcon className="mr-2" />
-                            Scan for Nearby Devices
+                            Scan for Bluetooth Devices
                           </>
                         )}
                       </Button>
                       
-                      {bluetoothDevices.length > 0 && (
+                      {bluetoothDevices.length > 0 ? (
                         <div className="mt-3">
-                          <p className="text-sm font-medium mb-2">Available Devices:</p>
+                          <div className="flex justify-between items-center mb-2">
+                            <p className="text-sm font-medium">Available Devices:</p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs h-8 px-2"
+                              onClick={handleScan}
+                            >
+                              <RefreshCwIcon size={14} className="mr-1" />
+                              Refresh
+                            </Button>
+                          </div>
                           <div className="space-y-2 max-h-40 overflow-y-auto">
                             {bluetoothDevices.map((device) => (
                               <div 
@@ -262,12 +286,16 @@ const SendMoney: React.FC = () => {
                                     className="text-xs"
                                   >
                                     <CheckCircle2Icon size={14} className="mr-1" />
-                                    Select
+                                    Connect
                                   </Button>
                                 )}
                               </div>
                             ))}
                           </div>
+                        </div>
+                      ) : (
+                        <div className="mt-3 text-center text-sm text-gray-500">
+                          No devices found. Click "Scan" to discover nearby Bluetooth devices.
                         </div>
                       )}
                     </>
