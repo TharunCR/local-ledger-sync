@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -12,6 +13,12 @@ type Transaction = {
   type: "send" | "receive";
 };
 
+type BluetoothDevice = {
+  id: string;
+  name: string;
+  connected: boolean;
+};
+
 type UpiContextType = {
   isOnline: boolean;
   toggleOnline: () => void;
@@ -23,8 +30,15 @@ type UpiContextType = {
   receiveMoney: (amount: number, sender: string) => void;
   syncLedger: () => void;
   upiId: string;
+  isBluetoothOn: boolean;
+  toggleBluetooth: () => void;
+  bluetoothDevices: BluetoothDevice[];
+  connectToDevice: (deviceId: string) => void;
+  disconnectDevice: (deviceId: string) => void;
+  sendMoneyViaBluetooth: (amount: number, deviceId: string, pin: string) => Promise<boolean>;
 };
 
+// Create a context to share bluetooth state across components
 const UpiContext = createContext<UpiContextType | undefined>(undefined);
 
 export const useUpi = () => {
@@ -42,6 +56,12 @@ export const UpiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
   const [upiId, setUpiId] = useState("user@payzzle");
+  const [isBluetoothOn, setIsBluetoothOn] = useState(false);
+  const [bluetoothDevices, setBluetoothDevices] = useState<BluetoothDevice[]>([
+    { id: "device1", name: "Laptop B", connected: false },
+    { id: "device2", name: "Mobile A", connected: false },
+    { id: "device3", name: "Laptop C", connected: false }
+  ]);
   
   const PIN = "1234"; // This would normally be securely stored/verified
 
@@ -53,6 +73,35 @@ export const UpiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [isOnline]);
 
+  // Event listener to simulate receiving bluetooth toggle state from other devices
+  useEffect(() => {
+    // In a real app, this would be a connection to a Bluetooth API
+    const handleBluetoothEvent = (event: CustomEvent) => {
+      if (event.detail && event.detail.type === 'bluetooth-toggle') {
+        setIsBluetoothOn(event.detail.state);
+        if (event.detail.state) {
+          toast.info("Bluetooth turned on by another device");
+        } else {
+          toast.info("Bluetooth turned off by another device");
+        }
+      }
+
+      // Handle incoming money transfers via Bluetooth
+      if (event.detail && event.detail.type === 'bluetooth-transfer') {
+        const { amount, sender } = event.detail;
+        receiveMoney(amount, sender);
+        toast.success(`Received ₹${amount} via Bluetooth from ${sender}`);
+      }
+    };
+
+    // Register global event listener for simulating Bluetooth communication
+    window.addEventListener('bluetooth-event' as any, handleBluetoothEvent);
+    
+    return () => {
+      window.removeEventListener('bluetooth-event' as any, handleBluetoothEvent);
+    };
+  }, []);
+
   const toggleOnline = () => {
     const newStatus = !isOnline;
     setIsOnline(newStatus);
@@ -61,6 +110,61 @@ export const UpiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } else {
       toast.info("You are now offline");
     }
+  };
+
+  const toggleBluetooth = () => {
+    const newBluetoothState = !isBluetoothOn;
+    setIsBluetoothOn(newBluetoothState);
+    
+    // In a real app, this would use the Bluetooth API to toggle the device's Bluetooth
+    
+    // Simulate broadcasting the Bluetooth state change to other devices
+    const bluetoothEvent = new CustomEvent('bluetooth-event', {
+      detail: {
+        type: 'bluetooth-toggle',
+        state: newBluetoothState,
+      }
+    });
+    window.dispatchEvent(bluetoothEvent);
+    
+    if (newBluetoothState) {
+      toast.success("Bluetooth is now enabled");
+    } else {
+      toast.error("Bluetooth is now disabled");
+      // Disconnect from all devices when turning Bluetooth off
+      setBluetoothDevices(prevDevices => 
+        prevDevices.map(device => ({ ...device, connected: false }))
+      );
+    }
+  };
+
+  const connectToDevice = (deviceId: string) => {
+    if (!isBluetoothOn) {
+      toast.error("Please turn on Bluetooth first");
+      return;
+    }
+
+    setBluetoothDevices(prevDevices =>
+      prevDevices.map(device => 
+        device.id === deviceId 
+          ? { ...device, connected: true }
+          : device
+      )
+    );
+    
+    toast.success(`Connected to ${bluetoothDevices.find(d => d.id === deviceId)?.name}`);
+  };
+
+  const disconnectDevice = (deviceId: string) => {
+    setBluetoothDevices(prevDevices =>
+      prevDevices.map(device => 
+        device.id === deviceId 
+          ? { ...device, connected: false }
+          : device
+      )
+    );
+    
+    toast.info(`Disconnected from ${bluetoothDevices.find(d => d.id === deviceId)?.name}`);
   };
 
   const sendMoney = async (amount: number, recipient: string, pin: string): Promise<boolean> => {
@@ -104,6 +208,69 @@ export const UpiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       toast.success(`₹${amount} will be sent when online`);
     }
     
+    return true;
+  };
+
+  const sendMoneyViaBluetooth = async (amount: number, deviceId: string, pin: string): Promise<boolean> => {
+    // Validate conditions
+    if (!isBluetoothOn) {
+      toast.error("Please turn on Bluetooth first");
+      return false;
+    }
+    
+    if (pin !== PIN) {
+      toast.error("Incorrect UPI PIN");
+      return false;
+    }
+
+    if (amount <= 0) {
+      toast.error("Amount must be greater than 0");
+      return false;
+    }
+
+    if (ledgerBalance < amount) {
+      toast.error("Insufficient balance");
+      return false;
+    }
+
+    const targetDevice = bluetoothDevices.find(device => device.id === deviceId);
+    if (!targetDevice) {
+      toast.error("Device not found");
+      return false;
+    }
+    
+    if (!targetDevice.connected) {
+      toast.error("Please connect to the device first");
+      return false;
+    }
+
+    // Create a transaction
+    const transaction: Transaction = {
+      id: Math.random().toString(36).substring(2, 15),
+      amount,
+      recipient: `${targetDevice.name}@payzzle`,
+      sender: upiId,
+      timestamp: new Date(),
+      status: "pending",
+      type: "send"
+    };
+
+    // Update ledger balance immediately
+    setLedgerBalance(prev => prev - amount);
+    setPendingTransactions(prev => [...prev, transaction]);
+
+    // Simulate sending money via Bluetooth to the other device
+    const transferEvent = new CustomEvent('bluetooth-event', {
+      detail: {
+        type: 'bluetooth-transfer',
+        amount,
+        sender: upiId,
+        recipient: targetDevice.name
+      }
+    });
+    window.dispatchEvent(transferEvent);
+    
+    toast.success(`₹${amount} sent to ${targetDevice.name} via Bluetooth`);
     return true;
   };
 
@@ -169,7 +336,13 @@ export const UpiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     sendMoney,
     receiveMoney,
     syncLedger,
-    upiId
+    upiId,
+    isBluetoothOn,
+    toggleBluetooth,
+    bluetoothDevices,
+    connectToDevice,
+    disconnectDevice,
+    sendMoneyViaBluetooth
   };
 
   return <UpiContext.Provider value={value}>{children}</UpiContext.Provider>;

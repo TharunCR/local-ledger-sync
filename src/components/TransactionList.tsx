@@ -4,20 +4,30 @@ import { useUpi } from '@/context/UpiContext';
 import { 
   ArrowUpIcon, 
   ArrowDownIcon,
-  ClockIcon
+  ClockIcon,
+  BluetoothIcon
 } from 'lucide-react';
 import { format } from 'date-fns';
 
 const TransactionList: React.FC = () => {
   const { transactions, pendingTransactions } = useUpi();
   
-  // Ensure unique transactions by using Set
+  // Ensure unique transactions by using Map
   const allTransactions = React.useMemo(() => {
     const uniqueTransactions = new Map();
-    [...pendingTransactions, ...transactions].forEach(tx => {
-      uniqueTransactions.set(tx.id, tx);
+    // Add pending transactions first
+    pendingTransactions.forEach(tx => {
+      uniqueTransactions.set(tx.id, { ...tx, isPending: true });
     });
-    return Array.from(uniqueTransactions.values());
+    
+    // Then add completed transactions, which will override any pending with the same ID
+    transactions.forEach(tx => {
+      uniqueTransactions.set(tx.id, { ...tx, isPending: false });
+    });
+    
+    // Convert map to array and sort by timestamp (newest first)
+    return Array.from(uniqueTransactions.values())
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, [pendingTransactions, transactions]);
 
   if (allTransactions.length === 0) {

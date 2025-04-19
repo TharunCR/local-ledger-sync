@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useUpi } from '@/context/UpiContext';
 import {
   Dialog,
@@ -10,35 +11,66 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ArrowUpIcon, BluetoothIcon, NfcIcon, QrCodeIcon, PhoneIcon } from 'lucide-react';
+import { 
+  ArrowUpIcon, 
+  BluetoothIcon, 
+  BluetoothConnectedIcon, 
+  BluetoothOffIcon,
+  BluetoothSearchingIcon,
+  NfcIcon, 
+  QrCodeIcon, 
+  PhoneIcon,
+  CheckCircle2Icon,
+  XCircleIcon
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 const SendMoney: React.FC = () => {
-  const { sendMoney, isOnline, ledgerBalance } = useUpi();
+  const { 
+    sendMoney, 
+    isOnline, 
+    ledgerBalance, 
+    isBluetoothOn,
+    bluetoothDevices,
+    connectToDevice,
+    disconnectDevice,
+    sendMoneyViaBluetooth
+  } = useUpi();
+  
   const [amount, setAmount] = useState('');
   const [recipient, setRecipient] = useState('');
   const [pin, setPin] = useState('');
   const [step, setStep] = useState(1);
   const [transferMethod, setTransferMethod] = useState<'bluetooth' | 'nfc' | 'qr'>('bluetooth');
   const [isSearching, setIsSearching] = useState(false);
-  const [foundDevices, setFoundDevices] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSearch = () => {
+    if (!isBluetoothOn) {
+      toast.error("Please enable Bluetooth first");
+      return;
+    }
+    
     setIsSearching(true);
+    
+    // Simulate device discovery process
     setTimeout(() => {
-      setFoundDevices([
-        { id: 'device1', name: 'Device 1' },
-        { id: 'device2', name: 'Device 2' },
-        { id: 'device3', name: 'Device 3' }
-      ]);
       setIsSearching(false);
     }, 2000);
   };
 
-  const handleDeviceClick = (device: { id: string; name: string }) => {
-    setRecipient(`${device.id}@payzzle`);
+  const handleDeviceSelect = (deviceId: string) => {
+    setSelectedDevice(deviceId);
+    connectToDevice(deviceId);
+  };
+
+  const handleDeviceDisconnect = (deviceId: string) => {
+    disconnectDevice(deviceId);
+    if (selectedDevice === deviceId) {
+      setSelectedDevice(null);
+    }
   };
 
   const handleSend = async () => {
@@ -57,7 +89,16 @@ const SendMoney: React.FC = () => {
     }
     
     setIsProcessing(true);
-    const success = await sendMoney(Number(amount), recipient, pin);
+    
+    let success;
+    
+    // Use different sending method based on online status and transfer method
+    if (!isOnline && transferMethod === 'bluetooth' && selectedDevice) {
+      success = await sendMoneyViaBluetooth(Number(amount), selectedDevice, pin);
+    } else {
+      success = await sendMoney(Number(amount), recipient, pin);
+    }
+    
     setIsProcessing(false);
     
     if (success) {
@@ -76,7 +117,7 @@ const SendMoney: React.FC = () => {
     setPin('');
     setStep(1);
     setIsSearching(false);
-    setFoundDevices([]);
+    setSelectedDevice(null);
     setTransferMethod('bluetooth');
   };
 
@@ -87,7 +128,7 @@ const SendMoney: React.FC = () => {
           <ArrowUpIcon size={18} className="mr-2" /> Send Money
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Send Money {!isOnline && '(Offline Mode)'}</DialogTitle>
         </DialogHeader>
@@ -128,8 +169,13 @@ const SendMoney: React.FC = () => {
                     variant={transferMethod === 'bluetooth' ? 'default' : 'outline'}
                     className="flex flex-col items-center py-3"
                     onClick={() => setTransferMethod('bluetooth')}
+                    disabled={!isBluetoothOn}
                   >
-                    <BluetoothIcon className="mb-1" />
+                    {isBluetoothOn ? (
+                      <BluetoothIcon className="mb-1" />
+                    ) : (
+                      <BluetoothOffIcon className="mb-1 text-gray-400" />
+                    )}
                     <span className="text-xs">Bluetooth</span>
                   </Button>
                   <Button
@@ -155,31 +201,76 @@ const SendMoney: React.FC = () => {
               
               {transferMethod === 'bluetooth' && (
                 <div>
-                  <Button 
-                    onClick={handleSearch} 
-                    disabled={isSearching}
-                    className="w-full"
-                  >
-                    {isSearching ? 'Searching...' : 'Search for Nearby Devices'}
-                  </Button>
-                  
-                  {foundDevices.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-sm font-medium mb-2">Select a device:</p>
-                      <div className="space-y-2">
-                        {foundDevices.map((device) => (
-                          <Button 
-                            key={device.id}
-                            variant="outline"
-                            className={`w-full justify-start ${recipient === `${device.id}@payzzle` ? 'border-blue-500' : ''}`}
-                            onClick={() => handleDeviceClick(device)}
-                          >
-                            <PhoneIcon size={16} className="mr-2" />
-                            {device.name}
-                          </Button>
-                        ))}
-                      </div>
+                  {!isBluetoothOn ? (
+                    <div className="text-center py-3">
+                      <BluetoothOffIcon size={40} className="mx-auto mb-2 text-gray-400" />
+                      <p>Please enable Bluetooth in the header to use this feature</p>
                     </div>
+                  ) : (
+                    <>
+                      <Button 
+                        onClick={handleSearch} 
+                        disabled={isSearching}
+                        className="w-full"
+                      >
+                        {isSearching ? (
+                          <>
+                            <BluetoothSearchingIcon className="animate-pulse mr-2" />
+                            Searching...
+                          </>
+                        ) : (
+                          <>
+                            <BluetoothIcon className="mr-2" />
+                            Scan for Nearby Devices
+                          </>
+                        )}
+                      </Button>
+                      
+                      {bluetoothDevices.length > 0 && (
+                        <div className="mt-3">
+                          <p className="text-sm font-medium mb-2">Available Devices:</p>
+                          <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {bluetoothDevices.map((device) => (
+                              <div 
+                                key={device.id}
+                                className={`border rounded-md p-3 flex justify-between items-center
+                                  ${device.connected ? 'border-blue-500' : 'border-gray-200'}`}
+                              >
+                                <div className="flex items-center">
+                                  {device.connected ? (
+                                    <BluetoothConnectedIcon size={18} className="mr-2 text-blue-500" />
+                                  ) : (
+                                    <BluetoothIcon size={18} className="mr-2 text-gray-500" />
+                                  )}
+                                  <span>{device.name}</span>
+                                </div>
+                                {device.connected ? (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleDeviceDisconnect(device.id)}
+                                    className="text-xs"
+                                  >
+                                    <XCircleIcon size={14} className="mr-1" />
+                                    Disconnect
+                                  </Button>
+                                ) : (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleDeviceSelect(device.id)}
+                                    className="text-xs"
+                                  >
+                                    <CheckCircle2Icon size={14} className="mr-1" />
+                                    Select
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -239,7 +330,7 @@ const SendMoney: React.FC = () => {
               step === 1 
                 ? !amount || (isOnline && !recipient) 
                 : step === 2
-                  ? !recipient && transferMethod === 'bluetooth'
+                  ? (transferMethod === 'bluetooth' && (!isBluetoothOn || !selectedDevice))
                   : !pin || pin.length !== 4 || isProcessing
             }
           >
