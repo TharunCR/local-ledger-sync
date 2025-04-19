@@ -23,10 +23,15 @@ export class BluetoothService {
     
     try {
       // Request device with our service
-      const device = await navigator.bluetooth.requestDevice({
+      const device = await navigator.bluetooth?.requestDevice({
         acceptAllDevices: true,
         optionalServices: [this.SERVICE_UUID]
       });
+      
+      if (!device) {
+        console.error('No Bluetooth device selected');
+        return null;
+      }
       
       console.log('Bluetooth device selected:', device.name);
       this.connectedDevice = device;
