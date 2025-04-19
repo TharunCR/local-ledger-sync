@@ -49,6 +49,7 @@ export const UpiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (isOnline && pendingTransactions.length > 0) {
       syncLedger();
+      toast.success('Transactions synced automatically');
     }
   }, [isOnline]);
 
@@ -94,13 +95,11 @@ export const UpiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Update ledger balance immediately
     setLedgerBalance(prev => prev - amount);
 
-    // If online, update actual balance too
     if (isOnline) {
       setActualBalance(prev => prev - amount);
       setTransactions(prev => [transaction, ...prev]);
       toast.success(`₹${amount} sent to ${recipient}`);
     } else {
-      // Save to pending transactions if offline
       setPendingTransactions(prev => [...prev, transaction]);
       toast.success(`₹${amount} will be sent when online`);
     }
@@ -123,12 +122,10 @@ export const UpiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setLedgerBalance(prev => prev + amount);
     
     if (isOnline) {
-      // If online, update actual balance and add to completed transactions
       setActualBalance(prev => prev + amount);
       setTransactions(prev => [transaction, ...prev]);
       toast.success(`₹${amount} received from ${sender}`);
     } else {
-      // If offline, add to pending transactions
       setPendingTransactions(prev => [...prev, { ...transaction, status: "pending" }]);
       toast.success(`₹${amount} will be received when online`);
     }

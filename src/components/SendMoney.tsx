@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useUpi } from '@/context/UpiContext';
 import {
@@ -22,39 +21,41 @@ const SendMoney: React.FC = () => {
   const [step, setStep] = useState(1);
   const [transferMethod, setTransferMethod] = useState<'bluetooth' | 'nfc' | 'qr'>('bluetooth');
   const [isSearching, setIsSearching] = useState(false);
-  const [foundDevices, setFoundDevices] = useState<string[]>([]);
+  const [foundDevices, setFoundDevices] = useState<Array<{ id: string; name: string }>>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  // Simulate device search for offline modes
   const handleSearch = () => {
     setIsSearching(true);
     setTimeout(() => {
-      setFoundDevices(['Device 1', 'Device 2', 'Device 3']);
+      setFoundDevices([
+        { id: 'device1', name: 'Device 1' },
+        { id: 'device2', name: 'Device 2' },
+        { id: 'device3', name: 'Device 3' }
+      ]);
       setIsSearching(false);
     }, 2000);
   };
 
-  const handleDeviceClick = (device: string) => {
-    setRecipient(`${device.toLowerCase().replace(' ', '')}@localupi`);
+  const handleDeviceClick = (device: { id: string; name: string }) => {
+    setRecipient(`${device.id}@payzzle`);
   };
 
   const handleSend = async () => {
     if (step === 1) {
       if (isOnline) {
-        setStep(3); // Skip offline method selection, go straight to PIN
+        setStep(3);
       } else {
-        setStep(2); // Show offline transfer methods
+        setStep(2);
       }
       return;
     }
     
     if (step === 2) {
-      setStep(3); // After selecting offline method, go to PIN
+      setStep(3);
       return;
     }
     
-    // PIN verification and transfer (step 3)
     setIsProcessing(true);
     const success = await sendMoney(Number(amount), recipient, pin);
     setIsProcessing(false);
@@ -166,15 +167,15 @@ const SendMoney: React.FC = () => {
                     <div className="mt-3">
                       <p className="text-sm font-medium mb-2">Select a device:</p>
                       <div className="space-y-2">
-                        {foundDevices.map((device, idx) => (
+                        {foundDevices.map((device) => (
                           <Button 
-                            key={idx}
+                            key={device.id}
                             variant="outline"
-                            className={`w-full justify-start ${recipient === `${device.toLowerCase().replace(' ', '')}@localupi` ? 'border-blue-500' : ''}`}
+                            className={`w-full justify-start ${recipient === `${device.id}@payzzle` ? 'border-blue-500' : ''}`}
                             onClick={() => handleDeviceClick(device)}
                           >
                             <PhoneIcon size={16} className="mr-2" />
-                            {device}
+                            {device.name}
                           </Button>
                         ))}
                       </div>

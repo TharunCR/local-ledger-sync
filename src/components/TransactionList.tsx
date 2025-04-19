@@ -11,7 +11,14 @@ import { format } from 'date-fns';
 const TransactionList: React.FC = () => {
   const { transactions, pendingTransactions } = useUpi();
   
-  const allTransactions = [...pendingTransactions, ...transactions];
+  // Ensure unique transactions by using Set
+  const allTransactions = React.useMemo(() => {
+    const uniqueTransactions = new Map();
+    [...pendingTransactions, ...transactions].forEach(tx => {
+      uniqueTransactions.set(tx.id, tx);
+    });
+    return Array.from(uniqueTransactions.values());
+  }, [pendingTransactions, transactions]);
 
   if (allTransactions.length === 0) {
     return (
