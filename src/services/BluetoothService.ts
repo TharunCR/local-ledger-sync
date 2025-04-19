@@ -58,19 +58,35 @@ export class BluetoothService {
     }
     
     try {
+      console.log('Attempting to connect to GATT server for device:', this.connectedDevice.name);
       this.gattServer = await this.connectedDevice.gatt?.connect();
+      
       if (!this.gattServer) {
         console.error('Failed to connect to GATT server');
         return false;
       }
       
+      console.log('Connected to GATT server, getting primary service');
+      
       // Get the transfer service
       const service = await this.gattServer.getPrimaryService(this.SERVICE_UUID);
+      
+      if (!service) {
+        console.error('Service not found:', this.SERVICE_UUID);
+        return false;
+      }
+      
+      console.log('Got primary service, getting characteristic');
       
       // Get the transfer characteristic
       this.transferCharacteristic = await service.getCharacteristic(this.CHARACTERISTIC_UUID);
       
-      console.log('Connected to GATT server and got characteristic');
+      if (!this.transferCharacteristic) {
+        console.error('Characteristic not found:', this.CHARACTERISTIC_UUID);
+        return false;
+      }
+      
+      console.log('Successfully connected to GATT server and got characteristic');
       return true;
     } catch (error) {
       console.error('Error connecting to GATT server:', error);
@@ -81,11 +97,13 @@ export class BluetoothService {
   // Disconnect from the device
   disconnect(): void {
     if (this.gattServer && this.gattServer.connected) {
+      console.log('Disconnecting from GATT server');
       this.gattServer.disconnect();
     }
     
     this.gattServer = null;
     this.transferCharacteristic = null;
+    console.log('Bluetooth disconnected');
   }
   
   // Send data to connected device

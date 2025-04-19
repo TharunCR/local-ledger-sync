@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import BluetoothService from '@/services/BluetoothService';
@@ -149,6 +148,7 @@ export const UpiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return prev;
         });
         
+        toast.success(`Found device: ${device.name || 'Unknown Device'}`);
         return true;
       }
       
@@ -173,6 +173,17 @@ export const UpiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     
     try {
+      // Make sure the BluetoothService has the device we want to connect to
+      if (targetDevice.device) {
+        // Set the device we want to connect to as the current device in BluetoothService
+        // This ensures the connect method will use the right device
+        (BluetoothService as any).connectedDevice = targetDevice.device;
+      } else {
+        toast.error("Device reference lost, please scan again");
+        return false;
+      }
+      
+      // Now connect to the device
       const connected = await BluetoothService.connect();
       
       if (connected) {

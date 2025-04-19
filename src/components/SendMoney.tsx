@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -21,7 +22,8 @@ import {
   PhoneIcon,
   CheckCircle2Icon,
   XCircleIcon,
-  RefreshCwIcon
+  RefreshCwIcon,
+  LoaderIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -47,6 +49,7 @@ const SendMoney: React.FC = () => {
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isConnecting, setIsConnecting] = useState<string | null>(null);
 
   const handleScan = async () => {
     if (!isBluetoothOn) {
@@ -72,9 +75,22 @@ const SendMoney: React.FC = () => {
 
   const handleDeviceSelect = async (deviceId: string) => {
     setSelectedDevice(deviceId);
-    const connected = await connectToDevice(deviceId);
-    if (!connected) {
+    setIsConnecting(deviceId);
+    
+    try {
+      const connected = await connectToDevice(deviceId);
+      if (!connected) {
+        setSelectedDevice(null);
+        toast.error("Failed to connect to device. Please try again.");
+      } else {
+        toast.success("Device connected successfully!");
+      }
+    } catch (error) {
+      console.error("Connection error:", error);
+      toast.error(`Failed to connect: ${(error as Error).message}`);
       setSelectedDevice(null);
+    } finally {
+      setIsConnecting(null);
     }
   };
 
@@ -142,6 +158,9 @@ const SendMoney: React.FC = () => {
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Send Money {!isOnline && '(Offline Mode)'}</DialogTitle>
+          <DialogDescription>
+            Transfer money to friends and family
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
@@ -266,7 +285,12 @@ const SendMoney: React.FC = () => {
                                   )}
                                   <span>{device.name}</span>
                                 </div>
-                                {device.connected ? (
+                                {isConnecting === device.id ? (
+                                  <div className="flex items-center text-xs">
+                                    <LoaderIcon size={14} className="animate-spin mr-1" />
+                                    Connecting...
+                                  </div>
+                                ) : device.connected ? (
                                   <Button 
                                     variant="outline" 
                                     size="sm"
