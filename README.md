@@ -1,50 +1,26 @@
+# 💳 Offline Payment System
 
+An efficient and modern offline payment management system built to handle transactions without requiring real-time internet connectivity. Designed for scalability, responsiveness, and ease of integration with backend APIs.
 
-## Project info
+## 🔍 Overview
 
+This project is a frontend interface for managing offline payments. It allows users to create, update, and view payment records locally with a polished UI, aiming for seamless user experience even in low or no-network conditions. Built using modern frontend tools for fast performance and maintainability.
 
-**Use your preferred IDE**
+## ⚙️ Features
 
+- Add, update, and view offline payment records
+- Responsive UI with smooth animations
+- Themeable components using shadcn/ui
+- Modular code structure with TypeScript
+- Local-first architecture (option to sync later with backend)
+- Form validation and feedback
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🛠️ Tech Stack
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
+- **Framework**: Vite (React + TypeScript)
+- **Styling**: Tailwind CSS
+- **UI Components**: shadcn/ui
+- **State Management**: React Context or Local State
+- **Build Tooling**: Vite with HMR
+- **Testing**: (Add Cypress / React Testing Library if used)
+- **Deployment Ready**: Optimized for Netlify, Vercel, etc.
